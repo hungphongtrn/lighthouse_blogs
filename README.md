@@ -1,5 +1,21 @@
 
-# 1. The Template
+# 1. Submitting a Blog Post
+
+1. **Clone the repository** to your local machine.
+2. **Create a new branch** using the format `{date}-{title}`.  
+   Example: `2021-01-01-hello-world` for a post titled "Hello, World!" on `2021-01-01`.
+3. **Add your content**:
+   - Navigate to `content/{slug}`.
+   - Create a new `index.mdx` file.
+   - Write your blog post using MarkdownX.
+
+```mermaid
+graph LR
+    A[Clone the repository] --> B[Create a new branch]
+    B --> C[Add content in index.mdx]
+```
+
+# 2. Blog Post Template
 
 ```markdown
 ---
@@ -11,24 +27,34 @@ updatedAt:
 author: 
 isPublished: 
 tags: 
-    - ...   
-    - ...
-    - ...
 ---
-... Here goes the content of the blog post ...
+...Content goes here...
 ```
 
-# Images, Videos, and Other Assets
+# 3. Managing Assets
 
-Store all images, videos, and other assets in the `public` directory. When referencing these assets in your content, use relative paths starting from the `public` directory. For example, if you have an image named `my-image.jpg` in the `public/images` directory, you can reference it in your content as `../../public/images/my-image.jpg`.
+Store images, videos, and other assets in `public`. Reference them using relative paths from `public`.  
+Example: For `public/images/{slug}/my-image.jpg`, reference it as `../../public/images/{slug}/my-image.jpg`.
 
-# Frontmatter Fields
+## 3.1 Adding Images in MDX
 
-- `title` (required): The title of the blog post.
-- `description` (required): A brief description of the blog post.
-- `image` (required): The path to the image that represents the blog post. This image will be displayed as a thumbnail in the blog list and as a header image in the blog post.
-- `publishedAt` (required): The date when the blog post was published. Use the format `YYYY-MM-DD`.
-- `updatedAt` (required): The date when the blog post was last updated. Use the format `YYYY-MM-DD`.
-- `author` (required): The author of the blog post.
-- `isPublished` (required): Set this to `true` to publish the blog post. Set it to `false` to keep the blog post as a draft.
-- `tags` (required): A list of tags that categorize the blog post.
+```markdown
+<Image
+  src="/images/{slug}/my-image.jpg"
+  width="718"
+  height="404"
+  alt="Description"
+  sizes="100vw"
+/>
+```
+
+# 4. Frontmatter Fields
+
+- **`title`**: Blog post title (required).
+- **`description`**: Brief summary (required).
+- **`image`**: Thumbnail/header image path (required).
+- **`publishedAt`**: Publish date (YYYY-MM-DD) (required).
+- **`updatedAt`**: Last update date (YYYY-MM-DD) (required).
+- **`author`**: Author name (required).
+- **`isPublished`**: Set to `true` to publish, `false` for draft (required).
+- **`tags`**: Categorization tags (required).
