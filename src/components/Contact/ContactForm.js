@@ -66,7 +66,7 @@ const ContactForm = () => {
 
   const onSubmit = async (data) => {
     const body = {
-      access_key: "122c6f3f-570d-4ccc-bf26-5e23bfccfc33",
+      access_key: process.env.NEXT_PUBLIC_WEB3FORMS_API_KEY,
       email: data.email,
       subject: `Connect Request From ${data.name}`,
       name: data.name,
