@@ -19,7 +19,7 @@ const AboutCoverSection = () => {
             <h2 className='font-bold capitalize text-4xl xs:text-5xl sxl:text-6xl  text-center lg:text-left'>
               Illuminate the Unknown, Empower the Future!
             </h2>
-            <p className='font-medium capitalize mt-4 text-base'>
+            <p className='font-medium mt-4 text-base'>
               At Lighthouse Research, we believe that knowledge should be as open and expansive as the horizons we seek to explore. By challenging the norms and pushing beyond closed technologies, we aim to shed light on new possibilities, guiding innovation toward a future where every breakthrough is a shared triumph.
             </p>
         </div>
