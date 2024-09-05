@@ -1,0 +1,285 @@
+---
+title: A Friendly Guide to N-gram Language Models! (Part 1)
+description: "Learn how N-Gram models work and how to build them in this guide."
+image: "../../public/images/n-gram-lm/n-gram-lm.png"
+publishedAt: "2024-09-02"
+updatedAt: "2024-09-02"
+author: "Hung-Phong Tran"
+isPublished: true
+tags: 
+    - language-model
+    - nlp
+---
+
+**N-Gram Model** is the simplest form of probabilistic language models, which we are going to discuss in this blog post. Through out this post, you will start to understand what is a language model and how it works. We will also discuss some methods to evaluate the performance of an N-gram model and how to build one from scratch. Let's get started!
+
+# 1. Intuition on what is a Language Model (LM)? 
+<figure style={{ display: 'block', margin: '0 auto', textAlign: 'center' }}>
+    <Image
+    src="/images/n-gram-lm/predict.png"
+    width="718"
+    height="404"
+    alt="predict"
+    sizes="100vw"
+    object-fit="cover"
+    style={{ display: 'block', margin: '0 auto' }}
+    />
+    <figcaption>A penguin trying to predict the future on a lighthouse. Source: Generated with FLUX.1[dev]</figcaption>
+</figure>
+
+How hard it is to predict the future? Well, it is hard, but not impossible. In fact, we do it all the time. When we are reading a book, we can predict what the next word is going to be. When we are listening to a conversation, we can predict what the next sentence is going to be. This is because we have a mental model of the world that we use to predict the future. This mental model is what we call a language model.
+
+Let's try a little experiment. Complete this sentence:
+```
+The cat sat on the ______
+```
+
+What word did you think of? 
+
+Mat? Roof? Chair?
+
+This prediction you just made is essentially what a language model does, but on a much larger scale.
+
+Similarly, you can also have a sense of how likely a sentence or a word is to appear in a given context. For example:
+```
+- Better sentence: A dog is chasing a ball >>> A ball is chasing a dog.
+- Better word: I store my food in the fridge >>> I store my foot in the TV.
+```
+Therefore, our goal is to build a model that can "sense" or "predict" whether a sentence or a word is **likely** to appear in a given context and this is where N-gram models come into play.
+
+# 2. What is an N-gram model?
+
+**N-gram**, once again, is a **probabilistic language model**, which can can estimate the **probability** of a **word** given the **n-1 previous words**.
+
+Mathematically, an N-gram model can be defined as follows:
+
+
+$$
+P(w|h)=\text{Probability of word w given history h}
+$$
+
+So we can estimate the probability of a word given the history of the previous words. One method to calculate this probability is to just count the number of times the word w appears after the history h and divide it by the number of times the history h appears. 
+
+But there is a catch! 
+
+The number of times the history h appears can be very small as the language is very creative, and new sentences are created all the time. Therefore, we need to find another way to estimate the probability of a word or a sentence.
+
+## 2.1 What is the connection between predicting the probability of a word and the probability of a sentence?
+
+<figure style={{ display: 'block', margin: '0 auto', textAlign: 'center' }}>
+    <Image
+    src="/images/n-gram-lm/word_tokens.png"
+    width={718*2}
+    height={500*2}
+    alt="predict"
+    sizes="100vw"
+    object-fit="cover"
+    style={{ display: 'block', margin: '0 auto' }}
+    />
+    <figcaption>
+        Example of tokenizing a text. Color represents different tokens. Source: [GPT for Work](https://gptforwork.com/tools/tokenizer)
+    </figcaption>
+</figure>
+
+First, let's start with some notation. Through out this post, we will continue to refer to *"words"*, while in reality, we are referring to *"tokens"*. A token can be a word, a punctuation mark, or a number, which can be established by a tokenizer, following algorithms like the **WordPiece** tokenizer or the **Byte Pair Encoding (BPE)** tokenizer (we will cover them in future posts). Other notation include:
+- $ P(X_i=\text{the})=P(\text{the}) $: The probability of the word "the".
+- $P(x_1x_2...x_n)=P(X_1=x_1, ... X_n=x_n)=P(x_{1:n})=P(x_{<n+1})$: The probability of the sentence "$x_1 x_2 ... x_n$".
+
+Now, let's get back to the main topic. 
+
+There are two types of probabilities that we can calculate: the probability of a word and the probability of a sentence. These two types of probabilities are closely related. 
+
+In fact, we can calculate the probability of a sentence by multiplying the probability of each word in the sentence. This is called the **chain rule** of probability, which can be written as follows:
+$$
+P(w_1,w_2,w_3,...,w_n)=P(w_1)P(w_2|w_1)P(w_3|w_1,w_2)...P(w_n|w_1,w_2,...,w_{n-1})
+$$
+
+This equation suggests that we can calculate the probability of a sentence by multiplying the probability of each word in the sentence. 
+
+However, this doesn't seem to help us much, as we still need to calculate the probability of each word given the history of the previous words. With super long sentences, the history can be very long, and the probability of a word given the history can be very small. Therefore, we need to find a way to simplify this equation.
+
+## 2.2 The Markov Assumption
+
+> “In probability theory and statistics, the term Markov property refers to the memoryless property of a stochastic process, which means that its future evolution is independent of its history.”
+
+The Markov assumption is a simplifying assumption that allows us to simplify the equation above.
+Based on this assumption, we can state that the probability of a word depends only on the previous n-1 words and simplify the equation above to the following:
+$$
+P(w_n|w_{0:n-1})\approx P(w_n|w_{n-N+1:n-1})
+$$
+
+where N is the order of the N-gram model. In the case of Bi-gram, N is equal to 2, 3 in Tri-gram, and so on.
+
+## 2.3 Bi-gram Language Model
+
+<figure style={{ display: 'block', margin: '0 auto', textAlign: 'center' }}>
+    <Image
+    src="/images/n-gram-lm/bi-gram.png"
+    width={718*2}
+    height={500*2}
+    alt="predict"
+    sizes="100vw"
+    object-fit="cover"
+    style={{ display: 'block', margin: '0 auto', backgroundColor: 'white' }}
+    />
+    <figcaption>
+        Bigrams from a random sample text. Source: [Data Child](https://datachild.net/machinelearning/bigram-language-model-python)
+    </figcaption>
+</figure>
+
+
+In the case of Bi-gram, how can we estimate the probability of a word given the previous word? 
+
+One way to do this is to calculate the maximum likelihood or **MLE** of the word given the previous word. 
+
+We can calculate the MLE by counting the number of times the word w appears after the previous word v and divide it by the number of times the previous word v appears so that the estimated probabilities lie between *0 and 1*.
+
+For instance, if you want to calculate the probability of the word "girl" given the previous word "beautiful", you can use the following formula:
+
+$$
+P(w_n|w_{n-1})=\frac{C(w_{n-1},w_n)}{\sum_{w}C(w_{n-1},w)}=\frac{C(w_{n-1}w_n)}{C(w_{n-1})}=\frac{\text{How many times "beautiful girl" appears}}{\text{How many times "beautiful" appears}}
+$$
+
+where $C$ denotes the count.
+
+To better understand the Bi-gram model, let's take a look at the following example borrowed fromm a database of restaurant in Berkeley, California ((Jurafsky et al., 1994). The following table shows the count of some bigrams in the database:
+
+|        |  i   | want |  to  | eat | chinese | food | lunch | spend |
+|--------|------|------|------|-----|---------|------|-------|-------|
+| **i**      |  5   |  827 |   0  |  9  |    0    |   0  |   0   |   2   |
+| **want**   |  2   |   0  |  608 |  1  |    6    |   6  |   5   |   1   |
+| **to**     |  2   |   0  |   4  | 686 |    2    |   0  |   6   |  211  |
+| **eat**    |  0   |   0  |   2  |  0  |   16    |   2  |  42   |   0   |
+| **chinese**|  1   |   0  |   0  |  0  |    0    |  82  |   1   |   0   |
+| **food**   |  15  |   0  |  15  |  0  |    1    |   4  |   0   |   0   |
+| **lunch**  |  2   |   0  |   0  |  0  |    1    |   0  |   0   |   0   |
+| **spend**  |  1   |   0  |   1  |  0  |    0    |   0  |   0   |   0   |
+
+and the count for each words is as follows:
+
+|  i   | want |  to  | eat | chinese | food | lunch | spend |
+|------|------|------|-----|---------|------|-------|-------|
+| 2533 | 927 | 2417 | 746 | 158 | 1093 | 341 | 278 | 
+
+
+Other important probabilities are given as:
+- $P(i|\langle s \rangle)=0.25$
+- $P(\text{english}|\text{want})=0.0011$
+- $P(\text{food})|\text{english})=0.5$
+- $P(\langle /s \rangle|\text{food})=0.68$
+
+Then the probabilities of the sentence "$\langle s \rangle$ i want to eat chinese food $\langle /s \rangle$" can be calculated as follows:
+$$
+\begin{align}
+P(\langle s \rangle \text{ i want english food } \langle /s \rangle) &= P(\text{i}|\langle s \rangle)P(\text{want}|\text{i})P(\text{english}|\text{want})P(\text{food}|\text{english})P(\langle /s \rangle|\text{food}) \\
+&= 0.25 \times 0.33 \times 0.0011 \times 0.5 \times 0.68 \\
+&= 0.000031
+\end{align}
+$$
+which is super low, indicating that the sentence is not likely to appear in the database.
+
+## 2.4 Dealing with Scale
+As we increase N (using trigrams, 4-grams, etc.), we gain more context but face the challenges of vanishing probabilities. To deal with this, we compute the probability in the log space, which is more numerically stable. The log probability of a sentence can be calculated as follows:
+$$ \prod_{i=1}^{n}p_i = \exp \sum_{i=1}^{n}\log p_i$$
+We might see some nice properties existing in the log space, such as linear scaling and the ability to avoid underflow.
+
+# 3. Perplexity
+Now, we have an objective to build a model that can predict the probability of a sentence. 
+
+But how can we evaluate the performance of the model? So we know that a LM that can correctly assign higher probabilities is better than one that assigns lower probabilities. 
+
+However, using only the probabilities is a bad idea as they strongly depend on the number of words/tokens in the sentence. Therefore, we need to find a way to normalize the probabilities, in other words, a metric that works per-word - across different sentence lengths. 
+
+This is where perplexity comes into play, formulated as:
+
+$$
+\text{Perplexity}(W)=P(w_1,w_2,...,w_N)^{-\frac{1}{N}}
+$$
+where N is the number of words in the sentence. The lower the perplexity, the better the model.
+
+## 3.1 Perplexity's Relationship with Entropy (A bit more in-depth)
+Perplexity arises from the information-theoretic concept of entropy. Entropy is a measure of uncertainty or randomness in a random variable, in which higher entropy means it is harder to predict the outcome.
+
+### 3.1.1 Brush-up on Entropy in Information Theory
+Entropy is calculated as follows:
+$$ H(X) = -\sum_{x \in X}P(x)\log P(x)$$
+where $P(x)$ is the probability of the event x. If we use the log base 2, the entropy is measured in ***bits***. 
+
+<figure style={{ display: 'block', margin: '0 auto', textAlign: 'center' }}>
+    <Image
+    src="/images/n-gram-lm/coin-flip.png"
+    width={718*2}
+    height={500*2}
+    alt="predict"
+    sizes="100vw"
+    object-fit="cover"
+    style={{ display: 'block', margin: '0 auto', backgroundColor: 'white' }}
+    />
+    <figcaption>
+        Example of a coin flip.
+    </figcaption>
+</figure>
+
+Intuitively speaking, entropy is the average number of bits (with log base 2) to encode a piece of information. 
+
+Imagine a coin flip, where the probability of heads is 0.5 and tails is 0.5. The entropy of this coin flip is 1 bit, as it takes 1 bit to encode the outcome of the coin flip: 0 for heads and 1 for tails. 
+
+However, if the coin is biased, for instance with a probability of 0.9 for heads and 0.1 for tails, the entropy is 0.47 bits, as it takes 0.47 bits on ***average*** to encode the outcome of the coin flip. Since the coin is biased, it is easier to predict the outcome, hence the lower entropy. 
+
+And since only 1 side of the coin happens most of the time, it takes less bits to encode the outcome.
+
+### 3.1.2 Entropy over a sequence or even a lanuage ...
+So given a sequence of words with length $n$ in some language $L$, we can calculate the entropy of the sequence as follows:
+
+$$
+H(w_{1:n})=-\sum_{w_{1:n}}P(w_{1:n})\log P(w_{1:n})
+$$
+
+where $P(w_{1:n})$ is the probability of the sequence of words $w_{1:n}$.
+Instead, we define the **entropy rate** by dividing the above entropy by the number of words in the sequence:
+
+$$
+H(w_{1:n})=-\frac{1}{n}\sum_{w_{1:n}}P(w_{1:n})\log P(w_{1:n})
+$$
+
+But if we want to consider the entropy of a whole language, we can calculate the entropy of the language as follows:
+$$
+\begin{aligned}
+H(L) & = \lim_{n \to \infty} -\frac{1}{n} H(w_{1:n}) \\
+     & = -\lim_{n \to \infty} \frac{1}{n} \sum_{W \in L} p(w_{1:n}) \log p(w_{1:n}) \\
+& \xrightarrow[\text{Long enough sequence}]{\text{Shannon-McMillan-Breiman theorem}}
+  \lim_{n \to \infty} -\frac{1}{n} \log p(w_{1:n})
+\end{aligned}
+$$
+Using the Shannon-McMillan-Breiman theorem, which states that the probability of a long enough sequence of words converges to the entropy of the language, we can simplify the entropy of the language as above.
+
+## 3.2 Get back to Cross-entropy
+
+Since we don't know the true probability distribution $p$ of the language, we can only estimate it using a model $m$ using cross-entropy. Since cross-entropy provides an upper bound on the entropy, the smaller the cross-entropy, the better the model and we can even use it to calculate the perplexity of the model:
+
+$$
+\text{Perplexity}(W)=2^{H(W)}
+$$
+
+While the cross-entropy is calculated as follows:
+
+$$
+H(p,m)=-\sum_{w \in W} p(w) \log m(w)
+$$
+
+so that we can use the magic of deep learning to obtain the model $m$ that can minimize the cross-entropy.
+
+# 4. Conclusion
+
+In this blog post, we have discussed the intuition behind language models and how N-gram models work. We have also discussed the Markov assumption and how it simplifies the calculation of the probability of a word given the history of the previous words. We have also discussed the perplexity and how it can be used to evaluate the performance of a language model. 
+
+In the next blog post, we will discuss how to build an Bi-gram model from scratch using either counting or deep learning techniques. Stay tuned!
+
+# 5. References
+
+- [Speech and Language Processing](https://web.stanford.edu/~jurafsky/slp3/), Dan Jurafsky and James H. Martin, 2024.
+- [GPT for Work](https://gptforwork.com/tools/tokenizer)
+- [Data Child](https://datachild.net/machinelearning/bigram-language-model-python)
+- [Shannon-McMillan-Breiman theorem](https://en.wikipedia.org/wiki/Shannon%E2%80%93McMillan%E2%80%93Breiman_theorem)
+- [Entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory))
+- [Perplexity](https://en.wikipedia.org/wiki/Perplexity)
