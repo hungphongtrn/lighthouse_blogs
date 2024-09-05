@@ -5,6 +5,8 @@ import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import GithubSlugger from "github-slugger"
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 const Blog = defineDocumentType(() => ({
   name: "Blog",
@@ -50,13 +52,13 @@ const Blog = defineDocumentType(() => ({
       type: "json",
       resolve: (doc) => readingTime(doc.body.raw)
     },
-    toc:{
+    toc: {
       type: "json",
       resolve: async (doc) => {
 
         const regulrExp = /\n(?<flag>#{1,6})\s+(?<content>.+)/g;
         const slugger = new GithubSlugger();
-        const headings = Array.from(doc.body.raw.matchAll(regulrExp)).map(({groups}) => {
+        const headings = Array.from(doc.body.raw.matchAll(regulrExp)).map(({ groups }) => {
           const flag = groups?.flag;
           const content = groups?.content;
 
@@ -80,9 +82,22 @@ const codeOptions = {
   grid: false,
 }
 
+const katexOptions = {
+  displayMode: true,
+  output: "html",
+}
+
 export default makeSource({
   /* options */
   contentDirPath: "content",
   documentTypes: [Blog],
-  mdx: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, {behavior: "append"}], [rehypePrettyCode, codeOptions] ] }
+  mdx: {
+    remarkPlugins: [remarkGfm, remarkMath],
+    rehypePlugins: [
+      rehypeSlug,
+      [rehypeKatex, katexOptions],
+      [rehypeAutolinkHeadings, { behavior: "append" }],
+      [rehypePrettyCode, codeOptions]
+    ]
+  }
 });
