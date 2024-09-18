@@ -1,0 +1,345 @@
+---
+title: CUDA programing: Part 1 - GPU architecture and CUDA overview
+description: "Learns how CUDA accelerates DL algorithms and write optimized CUDA code."
+image: "../../public/images/CUDA-programing-part-1/1726106904.png"
+publishedAt: "2024-09-18"
+updatedAt: "2024-09-18"
+author: "Dang Anh Quan"
+isPublished: true
+tags:  
+    - cuda-programing
+    - parallel-computing
+---
+
+# Learn CUDA Programming: Lecture 1 - - GPU architecture and CUDA overview
+
+**Learn CUDA Programming** – A beginner’s guide to GPU programming and parallel computing with CUDA 10.x and C/C++
+
+## 0. Course Goals
+
+- **Computing requirements**: Transition from single core to multiple cores with higher performance => Address the **compute gap** between application demand and hardware/software capabilities  
+- **Graphics Processing Units (GPUs)**: Major impact on the HPC domain since 2007 - Launch of **Compute Unified Device Architecture (CUDA)**  
+- Course Goals:  
+  - Understanding how CUDA accelerates deep learning algorithms  
+  - Entry point to writing optimized CUDA programs
+
+## Table of Contents
+
+1. The history of high-performance computing  
+2. Technical requirements  
+3. Hello World from CUDA  
+4. GPU architecture  
+5. Vector addition using CUDA  
+6. Error reporting in CUDA  
+7. Data type support in CUDA    
+
+## 1. The History of High-Performance Computing
+
+- The fundamental shift in processor architecture and design has helped to cross FLOP barriers, starting from Mega-Floating Point Operations (MFLOPs) to now being able to do PetaFLOP calculation in a second. 
+- Definition of FLOPs and ILP:
+    - Floating-Point Operations (FLOPs) per second is the fundamental unit for measuring the theoretical peak of any compute processor. MegaFLOP stands for 10 to the 6th power of FLOPS. PetaFLOP stands for 10 to the 15th power of FLOPS.
+    - Instruction-Level Parallelism (ILP) is a concept wherein codeindependent instructions can execute at the same time. For the instructions to execute in parallel, they need to be independent of each other. All modern CPU architecture (even GPU architecture) provides five to 15+ stages to allow for faster clock rates:
+
+- When we look at the history of HPC in terms of technology changes, there are three primary ones that stand out and can be referred to as epochs:
+    - Epoch 1: CRAY-1 was basically a single vector CPU architecture – peak 160 MFLOP
+    - Epoch 2: CRAY-2 was a 4 Core Vector CPU – peak 2 GigaFLOPs
+    - Epoch 3: CRAY-T3D was a fundamental shift and required compute nodes to work with each other and communicate by a network – peak 1 TeraFLOP and bandwith 300 MB/s.
+
+- After 20 years, no fundamental innovations => architectural innovations:
+    - 8 bit => 16 bit => 32 bit => 64 bit instruction set
+    - Increasing ILP
+    - Increasing the number of cores 
+
+<Image
+  src="/images/CUDA-programing-part-1/89057382-7f276780-d398-11ea-97e9-a0f3a974b3e0.png"
+  width="1629"
+  height="734"
+  alt="HPC System Evolution"
+  sizes="100vw"
+/>
+
+- Heterogeneous computing:
+    - Remember that: CPU is good for latency bound, GPU is good at running Single Instruction Multiple Data (SIMD)
+    - It is required that both of the processors, when used optimally, give maximum benefit in terms of performance
+<Image
+  src="/images/CUDA-programing-part-1/89057506-b6961400-d398-11ea-8f53-253e6c0a3d79.png"
+  width="1606"
+  height="873"
+  alt="Heterogeneous computing"
+  sizes="100vw"
+/>
+
+- Low latency versus higher throughput :
+    - CPU is designed for low latency access to cached datasets (L3 -> L1) , high clock speed => need to hide the latency of fetching the data by frequently storing used data in cache 
+    - GPU is high throughput architecture, hides latency with computation from other threads. Can’t do the same with CPU because GPU has a lot of register which thread context switching information is already present in them. 
+
+<Image
+  src="/images/CUDA-programing-part-1/89057597-e9d8a300-d398-11ea-9751-00e51dc36e63.png"
+  width="1241"
+  height="527"
+  alt="Low latency versus higher throughput"
+  sizes="100vw"
+/>
+
+- Programming approaches to GPU:
+    - CUDA is a parallel computing platform and programming model architecture developed by NVIDIA that exposes general-purpose computations on GPU as first-class capabilities. 
+
+<Image
+  src="/images/CUDA-programing-part-1/Screenshot 2024-09-18 230533.png"
+  width="1241"
+  height="527"
+  alt="Low latency versus higher throughput"
+  sizes="100vw"
+/>
+
+## 2. Technical requirements
+- A Linux/Windows PC with a modern NVIDIA GPU (Pascal architecture onwards) is required for this chapter, along with all of the necessary GPU drivers and the CUDA Toolkit (10.0 onward) installed. If you're unsure of your GPU's architecture, please visit NVIDIA's GPU site (https://developer.nvidia.com/cuda-gpus) and confirm your GPU's architecture. This chapter's code is also available on GitHub at https://github.com/ PacktPublishing/Learn-CUDA-Programming.
+- The code examples in this chapter have been developed and tested with version 10.1 of CUDA Toolkit, but it is recommended to use the latest CUDA version, if possible.
+
+## 3. Hello World from CUDA
+- CUDA C/C++ programming interface consists of C language extensions => target portions of source code for parallel execution on device (GPU).
+- In CUDA, there are 2 processors that work with each other:
+    - Device – GPU: part of code that runs on the GPU is device code
+    - Host – CPU : responsible for calling the device functions. Serial code that runs on the GPU is called host code. 
+
+```C++
+#include<stdio.h>
+#include<stdlib.h>
+__global__ void print_from_gpu(void) {
+    printf("Hello World! from thread [%d,%d] \
+    From device\n", threadIdx.x,blockIdx.x);
+}
+int main(void) {
+    printf("Hello World from host!\n");
+    print_from_gpu<<<1,1>>>();
+    cudaDeviceSynchronize();
+    return 0;
+}
+```
+- Let's try to compile and run the preceding snippet:
+    1. Compile the code: Place the preceding code into a file called hello_world.cu and compile it using the NVIDIA C Compiler (nvcc). Note that the extension of the file is .cu, which tells the compiler that this file has GPU code inside it:
+```bash
+$ nvcc -o hello_world hello_world.cu
+```
+    2. Execute the GPU code: We should receive the following output after executing the GPU code:
+```bash
+Hello World from host!
+Hello World from thread [0,0]!          From device
+```
+
+- Some constructs and keywords:
+    - __global__: tell the compiler that this is a function that will run on the device not on the host but called by host. Return type always “void”. Data parallel portions of an algorithm are executed on the device as kernels
+    - <<<,>>>: This keyword  - a call to the device function and the 1,1 parameter dicates the number of threads to launch in the kernel – launching kernel with only 1 thread
+    - threadIdx.x, blockIdx.x: Unique ID
+    - cudaDeviceSynchronize(): All kernel calls in CUDA is asynchronous in nature. One such API is cudaDeviceSynchronize, which waits until all of the previous calls to the device have finished
+
+## 4. GPU architecture 
+- CUDA threads are lightweight, fast-switching threads that execute on GPU cores, benefiting from large registers and hardware-based schedulers for minimal delay during context switching. Unlike CPU threads, CUDA threads are more efficient due to their register-based context. Each CUDA thread runs the same kernel but works independently on different data using a SIMT (Single Instruction, Multiple Threads) model.
+- CUDA blocks group threads together and execute on a single Streaming Multiprocessor (SM), with all threads in a block limited to the cores of that SM. Multiple SMs may exist in a GPU, so users must partition computations into blocks and threads to utilize the entire GPU effectively.
+- CUDA grids group blocks together, and the entire grid is executed on the device.
+
+<Image
+  src="/images/89059253-d24ee980-d39b-11ea-81c8-6a482bac163f.png"
+  width="1241"
+  height="527"
+  alt="Low latency versus higher throughput"
+  sizes="100vw"
+/>
+
+|  software     |          |       hardware          |
+|---------------|          |-------------------------|
+|  CUDA thread  |          | CUDA Core/SIMD code     |
+|---------------|          |-------------------------|
+|  CUDA block   |          | Streaming multiprocessor|
+|---------------|          |-------------------------|
+|  GRID/kernel  |          | GPU device		         |
+|---------------|          |-------------------------|
+
+<Image
+  src="/images/CUDA-programing-part-1/CUDA_Thread_Block_Idx.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+## 5. Vector addition using CUDA
+- Sequential code:
+```C++
+#include<stdio.h>
+#include<stdlib.h>
+#define N 512
+void host_add(int *a, int *b, int *c) {
+ for(int idx=0;idx<N;idx++)
+ c[idx] = a[idx] + b[idx];
+}
+//basically just fills the array with index.
+void fill_array(int *data) {
+ for(int idx=0;idx<N;idx++)
+ data[idx] = idx;
+}
+void print_output(int *a, int *b, int*c) {
+ for(int idx=0;idx<N;idx++)
+ printf("\n %d + %d = %d", a[idx] , b[idx], c[idx]);
+}
+int main(void) {
+ int *a, *b, *c;
+ int size = N * sizeof(int);
+ // Alloc space for host copies of a, b, c and setup input values
+ a = (int *)malloc(size); fill_array(a);
+ b = (int *)malloc(size); fill_array(b);
+ c = (int *)malloc(size);
+ host_add(a,b,c);
+ print_output(a,b,c);
+ free(a); free(b); free(c);
+ return 0;
+}
+```
+
+- CUDA code:
+```C++
+int main(void) {
+ int *a, *b, *c;
+ int *d_a, *d_b, *d_c; // device copies of a, b, c
+ int size = N * sizeof(int);
+ // Alloc space for host copies of a, b, c and setup input values
+ a = (int *)malloc(size); fill_array(a);
+ b = (int *)malloc(size); fill_array(b);
+ c = (int *)malloc(size);
+ // Alloc space for device copies of vector (a, b, c)
+ cudaMalloc((void *)&d_a, N * sizeof(int));
+ cudaMalloc((void *)&d_b, N *sizeof(int));
+ cudaMalloc((void *)&d_c, N * sizeof(int));
+ // Copy from host to device
+ cudaMemcpy(d_a, a, N * sizeof(int), cudaMemcpyHostToDevice);
+ cudaMemcpy(d_b, b, N* sizeof(int), cudaMemcpyHostToDevice);
+ device_add<<<1,1>>>(d_a,d_b,d_c);
+ // Copy result back to host
+ cudaMemcpy(c, d_c, N * sizeof(int), cudaMemcpyDeviceToHost);
+ print_output(a,b,c);
+ free(a); free(b); free(c);
+ //free gpu memory
+ cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);
+ return 0;
+}
+```
+
+- The fundamental changes or steps that are taken between the CUDA and sequential code:
+| Sequential Code                                       | CUDA Code                                     |
+|-------------------------------------------------------|-----------------------------------------------|
+| Step 1: Allocate memory on the CPU (malloc/new)       | Step 1: Allocate memory on the CPU (malloc/new) |
+| Step 2: Populate/initialize the CPU data              | Step 2: Allocate memory on the GPU (cudaMalloc) |
+| Step 3: Call the CPU function (e.g., vector addition) | Step 3: Populate/initialize the GPU data        |
+| Step 4: Consume the crunched data (print results)     | Step 4: Transfer data from the host to the device (cudaMemcpy) |
+|                                                       | Step 5: Call the GPU function with <<<,>>> brackets |
+|                                                       | Step 6: Synchronize the device and host (cudaDeviceSynchronize) |
+|                                                       | Step 7: Transfer data from the device to the host (cudaMemcpy) |
+|                                                       | Step 8: Consume the crunched data (print results) |
+
+
+- Creating multiple blocks:
+    - Additional keywords will be exposed that are related to how we can index CUDA blocks. Change the call to the device_add function, as follows:
+```C++
+//changing from device_add<<<1,1>>> to
+device_add<<<N,1>>>
+```
+    - This will execute the device_add function N times in parallel instead of once. Each parallel invocation of the device_add function is referred to as a block. Now, let's add a __global__ device function, as follows:
+```C++
+__global__ void device_add(int *a, int *b, int *c) {
+ c[blockIdx.x] = a[blockIdx.x] + b[blockIdx.x];
+}
+```
+
+    - By using blockIdx.x to index the array, each block handles a different element of the array.
+
+
+<Image
+  src="/images/CUDA-programing-part-1/Screenshot 2024-09-18 235643.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+- Creating multiple threads:
+    - A block can be split into multiple threads. Change the call to the device_add function, as follows:
+```C++
+//changing from device_add<<<1,1>>> to
+device_add<<<1,N>>>
+```
+    - This will execute the device_add function N times in parallel instead of once. Each parallel invocation of the device_add function is referred to as a thread. Change the device routine to reflect the kernel, as follows:
+```C++
+__global__ void device_add(int *a, int *b, int *c) {
+ c[threadIdx.x] = a[threadIdx.x] + b[threadIdx.x];
+}
+```
+
+<Image
+  src="/images/CUDA-programing-part-1/Screenshot 2024-09-19 000120.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+- Combining blocks and threads:
+    - Let's take a look at two scenarios that depict different combinations that the developer can choose from: 
+        - Scenario 1: Let's consider that the total number of vector elements is 32. Each block contains eight threads and a total of four blocks.
+```C++
+threads_per_block = 8;
+no_of_blocks = N/threads_per_block;
+device_add<<<no_of_blocks,threads_per_block>>>(d_a,d_b,d_c);
+```
+        - Scenario 2: Let's consider that the total number of vector elements is 32. Each block contains four threads and a total of eight blocks.
+```C++
+threads_per_block = 4;
+no_of_blocks = N/threads_per_block;
+device_add<<<no_of_blocks,threads_per_block>>>(d_a,d_b,d_c);
+```
+<Image
+  src="/images/Screenshot 2024-09-19 000535.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+    - With a combination of threads and blocks, the unique ID of a thread can be calculated. As shown in the preceding code, another variable is given to all threads. This is called blockDim. This variable consists of the block's dimensions, that is, the number of threads per block.
+<Image
+  src="/images/Screenshot 2024-09-19 000558.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+- Why bother with threads and blocks?
+    - Real-world applications require threads to communicate with each other and may want to wait for certain data to be interchanged before proceeding further. 
+    - The CUDA programming model allows this communication for threads within the same block. Threads belonging to different blocks cannot communicate/synchronize with each other during the execution of the kernel. 
+    - This restriction allows the scheduler to schedule the blocks on the SM independently of each other. The result of this is that, if new hardware is released with more SMs and if the code has enough parallelism, the code can be scaled linearly.
+<Image
+  src="/images/Screenshot 2024-09-19 000750.png"
+  width="1241"
+  height="527"
+  alt="CUDA_Thread_Block_Idx"
+  sizes="100vw"
+/>
+
+- Launching kernels in multiple dimensions:
+    - It is important to understand that every GPU architecture also puts a restriction on the dimensions of threads and blocks. For example, the NVIDIA Pascal card allows a maximum of 1,024 threads per thread block in the x and y dimensions, while in the z dimension, you can only launch 64 threads. Similarly, the maximum blocks in a grid are restricted to 65,535 in the y and z dimensions in the Pascal architecture and 2^31 -1 in the x dimension. If the developer launches a kernel with an unsupported dimension, the application throws a runtime error.
+
+## 6. Data type support in CUDA
+- Standard data types:
+    - char – 1 byte
+    - float - 4 byte.
+    - double – 8 byte
+- It is recommended that the data types are naturally aligned since aligned data access for data types that are 1, 2, 4, 8, or 16 bytes in size ensure that the GPU calls a single memory instruction. If not => interleaved => inefficient utilization of memory.
+- The alignment requirement is automatically fulfilled for the built-in types of char, short, int, long, long long, float, and double such as float2 and float4.
+- Also, CUDA programming supports complex data structures such as structures and classes (in the context of C and C++). For complex data structures, the developer can make use of alignment specifiers to the compiler to enforce the alignment requirements, as shown in the following code: 
+```C++
+struct __align__(16) {
+ float r;
+ float g;
+ float b;
+};
+```
