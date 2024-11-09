@@ -1,0 +1,123 @@
+---
+title: Introduction to Computer Graphics and 3D Representations
+description: "Overview of computer graphics and its components. Introduce different 3D representations."
+image: "../../public/images/intro-3d/model.jpg"
+publishedAt: "2024-11-08"
+updatedAt: "2024-11-08"
+author: "Quang Minh Dinh"
+isPublished: true
+tags: 
+    - computer-graphics
+    - 3d modeling
+---
+
+# 1. What is Computer Graphics?
+
+Computer graphics is a field within **visual computing** that focuses on generating and manipulating images with computers. It encompasses everything from 2D image processing to complex 3D modeling and rendering, crucial for applications in fields like animation, simulation, video games, virtual reality, and more. A primary subfield is **geometric modeling**, which handles the mathematical representation of 3D objects to enable their creation, manipulation, and visualization.
+
+# 2. 3D Representations
+
+In 3D modeling, objects can be represented in different ways depending on the desired properties, memory requirements, and use cases. The two primary categories of 3D representations are **implicit** and **explicit**.
+
+## 2.1. Implicit Representations
+
+Implicit representations define objects using mathematical equations or procedural functions, rather than explicitly specifying points or surfaces. This approach allows for compact data storage and efficient surface queries but can be challenging for detailed editing. Common types of implicit representations include:
+
+* **Algebraic Surfaces**: Defined by algebraic equations in three variables (e.g., \( f(x, y, z) = 0 \)), where points satisfying the equation form the surface. A simple example is the equation of a sphere, \( x^2 + y^2 + z^2 = r^2 \), which describes all points at a radius \( r \) from the origin.
+* **Signed Distance Fields (SDFs)**: Describe an object by assigning each point in space a value representing its distance to the surface, with the sign indicating whether the point is inside or outside the object. SDFs are often used in real-time applications and procedural modeling, as they allow for smooth surfaces and easy volumetric calculations.
+* **Implicit Functions**: More generalized than algebraic surfaces, implicit functions can define a wide variety of shapes. For instance, a metaball or “blobby” object can be represented by summing Gaussian functions centered at different points, which is often used in fluid simulations and organic modeling.
+* **Constructive Solid Geometry (CSG)**: Builds complex shapes by combining simple primitives (e.g., spheres, cubes) using Boolean operations like union, intersection, and difference. CSG is especially popular in CAD software because it allows intuitive assembly of complex objects from simple parts.
+
+Implicit representations are typically compact and advantageous for applications where surfaces need to be generated on-the-fly or when working with smooth, mathematically defined surfaces.
+
+## 2.2. Explicit Representations
+
+Explicit representations define objects by specifying individual elements (such as vertices, edges, and faces) in detail. These representations are well-suited for intricate, detailed models and are directly renderable. Common types of explicit representations include:
+
+* **Point Clouds**: A collection of points in 3D space, often acquired from scanners or photogrammetry. Each point represents a sample on the object's surface. While useful as raw data, point clouds lack connectivity information and require further processing (e.g., triangulation) to be used in rendering.
+* **Polygon Meshes**: The most common explicit representation in computer graphics. A polygon mesh is composed of vertices, edges, and faces that form the surface of an object. Meshes often use triangles or quads and are efficient for rendering because they can be processed directly by GPUs. Meshes provide detailed control over object geometry, making them suitable for detailed models.
+* **Voxel Grids**: A voxel grid divides 3D space into a grid of small cubes (voxels) that can represent solid or hollow regions. Used primarily in volumetric data, voxel grids are popular in medical imaging and volumetric rendering.
+
+## 2.3. Implicit vs. Explicit
+
+| Feature           | Implicit                                      | Explicit                                     |
+| :---------------- | :-------------------------------------------- | :------------------------------------------- |
+| Definition        | Indirect, through equations/functions         | Direct, by specifying vertices and faces     |
+| Storage           | Compact, especially for smooth shapes         | Can be large, depending on model complexity  |
+| Surface Queries   | Easy to determine inside/outside status       | May require complex algorithms               |
+| Editing           | Challenging to manipulate specific details    | Flexible and detailed editing                |
+| Suitable for      | Procedural and smooth models                  | Detailed, highly articulated objects         |
+| Rendering         | Requires conversion for most graphics engines | Directly renderable in common engines        |
+
+# 3. Polygon Meshes
+
+Polygon meshes are the most popular explicit representation in computer graphics, used in video games, movies, CAD software, and more. The mesh's structure enables efficient rendering, especially when using triangular polygons, which are highly optimized by modern graphics hardware.
+
+## 3.1. Why Triangles?
+
+Triangles are the simplest polygons, offering several benefits in 3D graphics:
+
+* **Simple to define**: A triangle requires only three vertices, minimizing data storage.
+* **Guaranteed planarity**: Three points always lie on a single plane, ensuring each triangle is planar, which simplifies calculations and ensures consistency in rendering.
+* **Efficient rendering**: Graphics hardware is optimized for processing triangles, enabling fast rendering of complex scenes.
+
+## 3.2. Triangle Soup
+
+A **triangle soup** is an unstructured collection of triangles, with each triangle defined independently. This approach is straightforward but inefficient because it lacks shared vertex and edge data, resulting in redundancy and higher memory usage. Additionally, operations like smoothing and subdivision become more complex with triangle soup.
+
+## 3.3. Vertex List + Face List
+
+A more efficient way to store a polygon mesh is by using a **vertex list** and a **face list**:
+
+* **Vertex List**: Stores each vertex’s coordinates in the mesh. By referencing vertices in the face list, this setup avoids redundancy.
+* **Face List**: Stores indices of vertices that make up each face, typically triangles or quads. This list specifies how vertices are connected, defining the mesh’s connectivity.
+
+This representation allows for more efficient storage and processing, reducing redundancy and enabling easy access to shared vertices for operations like smoothing.
+
+## 3.4. Topology vs. Geometry
+
+In 3D modeling, **geometry** and **topology** are distinct but interconnected:
+
+* **Geometry**: The position of vertices in 3D space, defining the object's shape and size.
+* **Topology**: The connectivity between vertices, edges, and faces. Topology determines the structure of the object, independent of its geometry.
+
+This separation allows for operations like deformation and subdivision, where the geometry changes (moving vertices) while the topology remains constant.
+
+## 3.5. Half-Edge Data Structure
+
+The **half-edge data structure** is a specialized representation of polygon meshes that encodes topological relationships, allowing efficient traversal and manipulation of the mesh. It is widely used in applications that require complex mesh operations, such as modeling and real-time simulations.
+
+### 3.5.1. What is a Half-Edge?
+
+In a half-edge structure, each edge is split into two half-edges, with each half-edge pointing in opposite directions. Each half-edge stores references to:
+
+* Its **starting vertex**
+* The **next half-edge** in the same face
+* Its **opposite half-edge** (i.e., the half-edge pointing in the opposite direction)
+* The **face** it belongs to
+
+This organization allows efficient traversal and access to neighboring elements, essential for advanced mesh processing tasks.
+
+### 3.5.2. Benefits of the Half-Edge Structure
+
+The half-edge structure is advantageous in several ways:
+
+* **Efficient traversal**: Algorithms can quickly access neighboring vertices, edges, and faces, which is valuable for mesh refinement, subdivision, and other operations.
+* **Memory efficiency**: Although more complex than basic vertex/face lists, the half-edge structure reduces redundancy in adjacency information, saving memory in large meshes.
+* **Dynamic editing**: Supports operations like edge flipping, face splitting, and vertex insertion with minimal restructuring, making it ideal for real-time applications.
+
+### 3.5.3. Common Applications
+
+The half-edge data structure is commonly used in algorithms for **subdivision surfaces** (e.g., Catmull-Clark and Loop subdivision) and **mesh repair** techniques, where efficient access to neighboring vertices and faces is essential for smooth transitions and geometry refinement. Its flexibility makes it suitable for applications involving procedural mesh editing and simulations.
+
+### 3.5.4. Half-Edge Traversal
+
+Traversal of the half-edge structure enables efficient local operations on the mesh by following links between vertices, edges, and faces. This is crucial for algorithms that require adjacency information, such as smoothing, simplification, and subdivision. By accessing neighboring elements directly through half-edges, these algorithms achieve high performance and precise control.
+
+# 4. Conclusion
+
+Selecting the right 3D representation is fundamental in computer graphics, as it influences memory use, rendering efficiency, and model editability. Implicit representations offer a compact, mathematically defined way to represent smooth surfaces and procedurally generated models. In contrast, explicit representations, particularly polygon meshes, allow for precise control over geometry and are ideal for detailed modeling and real-time rendering. Advanced structures like the half-edge data structure enhance mesh manipulation capabilities, providing the flexibility needed in modern computer graphics applications.
+
+# 5. References
+
+- [Introduction to Visual Computing](https://yaksoy.github.io/introvc/), Yağız Aksoy and Jason Peng, 2024.
