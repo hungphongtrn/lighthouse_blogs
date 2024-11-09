@@ -1,3 +1,9 @@
+# 0. Installation
+
+- Create a `.env` file and fill with credentials from Discord.
+- Install nodejs.
+- `npm install`.
+- `npm run dev`.
 
 # 1. Submitting a Blog Post
 
